@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Home</title>
+    <style>
+        body {
+            background-image: url('https://images.pexels.com/photos/1743165/pexels-photo-1743165.jpeg?auto=compress&cs=tinysrgb&w=1600');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #ffffff;
+            text-align: center;
+        }
+        p {
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background-color: #45a049;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .button:hover {
+            background-color: #ff0000;
+        }
+
+        .clock {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .chart-container {
+            width: 700px;
+            height: 400px;
+            margin: 20px;
+            background-image: url('https://images.unsplash.com/photo-1501630834273-4b5604d2ee31?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Y2xvdWR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60');
+            background-size: cover; /* Tự động điều chỉnh kích thước phù hợp */
+        }
+
+        .chart-container1 {
+            width: 700px;
+            height: 400px;
+            margin: 20px;
+            background-image: url('https://images.unsplash.com/photo-1501630834273-4b5604d2ee31?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Y2xvdWR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60');
+            background-size: cover; /* Tự động điều chỉnh kích thước phù hợp */
+        }
+
+        .chart-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-container2 {
+            width: 700px;
+            height: 400px;
+            margin: 20px;
+            background-image: url('https://images.unsplash.com/photo-1501630834273-4b5604d2ee31?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Y2xvdWR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60');
+            background-size: cover; /* Tự động điều chỉnh kích thước phù hợp */
+        }
+        .chart-wrapper1 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Thêm phần CSS cho bảng */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ffffff;
+            padding: 8px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        th {
+            background-color: #005f08;
+        }
+
+        td {
+            background-color: #26aac2;
+        }
+
+        td.on {
+            background-color: #00ff00;
+        }
+
+        td.off {
+            background-color: #ff0000;
+            color: #ffffff;
+        }
+        .highlight {
+            color: white; /* Màu chữ trắng */
+            font-weight: bold; /* Chữ đậm */
+        }
+        .sidebar {
+            height: 100%;
+            width: 200px;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 20px;
+        }
+
+        .sidebar a {
+            padding: 8px 8px 8px 16px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+        }
+
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+
+        /* CSS cho nội dung chính */
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+    </style>
+    <!-- Thêm thư viện Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function controlLight(room, state) {
+            fetch('/light', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'room=' + encodeURIComponent(room) + '&state=' + encodeURIComponent(state)
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Đã gửi yêu cầu điều khiển đèn');
+                    updateStatus(room, state);
+                } else {
+                    console.error('Lỗi khi gửi yêu cầu điều khiển đèn');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi yêu cầu điều khiển đèn:', error);
+            });
+        }
+
+        function updateStatus(room, status) {
+            const statusCell = document.getElementById(room + '_status');
+            statusCell.textContent = status;
+            statusCell.className = status === 'on' ? 'on' : 'off';
+        }
+
+        function turnOnAllLights() {
+            fetch('/all_lights_on', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Đã gửi yêu cầu bật tất cả đèn');
+                    updateAllLightsStatus('on');
+                } else {
+                    console.error('Lỗi khi gửi yêu cầu bật tất cả đèn');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi yêu cầu bật tất cả đèn:', error);
+            });
+        }
+
+        function turnOffAllLights() {
+            fetch('/all_lights_off', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Đã gửi yêu cầu tắt tất cả đèn');
+                    updateAllLightsStatus('off');
+                } else {
+                    console.error('Lỗi khi gửi yêu cầu tắt tất cả đèn');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi yêu cầu tắt tất cả đèn:', error);
+            });
+        }
+
+        function updateAllLightsStatus(status) {
+            const livingRoomStatus = document.getElementById('living_room_status');
+            const kitchenStatus = document.getElementById('kitchen_status');
+            const bedroomStatus = document.getElementById('bedroom_status');
+            const bathroomStatus = document.getElementById('bathroom_status');
+            const allLightsStatus = document.getElementById('all_lights_status');
+            const carStatus = document.getElementById('car_status');
+            livingRoomStatus.textContent = status;
+            livingRoomStatus.className = status === 'on' ? 'on' : 'off';
+
+            kitchenStatus.textContent = status;
+            kitchenStatus.className = status === 'on' ? 'on' : 'off';
+
+            bedroomStatus.textContent = status;
+            bedroomStatus.className = status === 'on' ? 'on' : 'off';
+
+            bathroomStatus.textContent = status;
+            bathroomStatus.className = status === 'on' ? 'on' : 'off';
+
+            allLightsStatus.textContent = status;
+            allLightsStatus.className = status === 'on' ? 'on' : 'off';
+
+            carStatus.textContent = status;
+            carStatus.className = status === 'on' ? 'on' : 'off';
+        }
+
+        function controlFan(state) {
+            fetch('/fan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `state=${state}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Đã gửi yêu cầu điều khiển quạt');
+                    updateFanStatus(state);
+                } else {
+                    console.error('Lỗi khi gửi yêu cầu điều khiển quạt');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi yêu cầu điều khiển quạt:', error);
+            });
+        }
+
+        function updateFanStatus(status) {
+            const fanStatus = document.getElementById('fan_status');
+            fanStatus.textContent = status;
+            fanStatus.className = status === 'on' ? 'on' : 'off';
+        }
+
+        function controlTV(state) {
+            fetch('/tv', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `state=${state}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Đã gửi yêu cầu điều khiển tv');
+                    updateTVStatus(state);
+                } else {
+                    console.error('Lỗi khi gửi yêu cầu điều khiển tv');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi yêu cầu điều khiển tv:', error);
+            });
+        }
+
+        function updateTVStatus(status) {
+            const tvStatus = document.getElementById('tv_status');
+            tvStatus.textContent = status;
+            tvStatus.className = status === 'on' ? 'on' : 'off';
+        }
+
+        function showPage(pageName) {
+            // Ẩn tất cả các trang
+            var pages = document.getElementsByClassName("page");
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].style.display = "none";
+            }
+
+            // Hiển thị trang được chọn
+            document.getElementById(pageName).style.display = "block";
+        }
+    </script>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="javascript:void(0)" onclick="showPage('home')">Trang chủ</a>
+        <a href="javascript:void(0)" onclick="showPage('lights')">Điều khiển đèn</a>
+        <a href="javascript:void(0)" onclick="showPage('fan')">Điều khiển thiết bị</a>
+        <a href="javascript:void(0)" onclick="showPage('sensor')">Tình trạng ngôi nhà</a>
+    </div>
+    <div class="content">
+        <!-- Trang chủ -->
+        <div id="home" class="page">
+            <h1><span style="color: white;">Điều khiển khóa cửa</span></h1>
+            <p><a href="/unlock" class="button" onclick="incrementCounter()"><span style="color: black;">Mở cửa</span></a></p>
+            <p><a href="/lock" class="button" onclick="resetCounter()"><span style="color: black;">Khóa cửa</span></a></p>
+            <!-- Nội dung trang chủ -->
+            <div class="youtube-video" style="text-align: center;">
+                <iframe width="1024" height="768" src="https://www.youtube.com/embed/XiLY3UqKcBo" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+          
+        <!-- Trang điều khiển đèn -->
+        <div id="lights" class="page" style="display: none;">
+            <h2><span style="color: white;">Điều khiển đèn</span></h2>
+            <!-- Nội dung điều khiển đèn -->
+            <!-- Bảng điều khiển đèn -->
+            <table>
+                <tr>
+                    <th>Số thứ tự</th>
+                    <th>Led</th>
+                    <th>Bật/Tắt</th>
+                    <th>Trạng thái</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Phòng khách</td>
+                    <td>
+                        <button onclick="controlLight('living_room', 'on')">Bật</button>
+                        <button onclick="controlLight('living_room', 'off')">Tắt</button>
+                    </td>
+                    <td id="living_room_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Nhà bếp</td>
+                    <td>
+                        <button onclick="controlLight('kitchen', 'on')">Bật</button>
+                        <button onclick="controlLight('kitchen', 'off')">Tắt</button>
+                    </td>
+                    <td id="kitchen_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Phòng ngủ</td>
+                    <td>
+                        <button onclick="controlLight('bedroom', 'on')">Bật</button>
+                        <button onclick="controlLight('bedroom', 'off')">Tắt</button>
+                    </td>
+                    <td id="bedroom_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>Phòng tắm</td>
+                    <td>
+                        <button onclick="controlLight('bathroom', 'on')">Bật</button>
+                        <button onclick="controlLight('bathroom', 'off')">Tắt</button>
+                    </td>
+                    <td id="bathroom_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>Nhà xe</td>
+                    <td>
+                        <button onclick="controlLight('car', 'on')">Bật</button>
+                        <button onclick="controlLight('car', 'off')">Tắt</button>
+                    </td>
+                    <td id="car_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>Tất cả</td>
+                    <td>
+                        <button onclick="turnOnAllLights()">Bật</button>
+                        <button onclick="turnOffAllLights()">Tắt</button>
+                    </td>
+                    <td id="all_lights_status" class="off">Wait</td>
+                </tr>
+                
+            </table>
+        </div>
+        <!-- Trang điều khiển quạt -->
+        <div id="fan" class="page">
+            <h2><span style="color: white;">Điều khiển thiết bị</span></h2>
+            <!-- Nội dung điều khiển thiết bị -->
+            <table>
+                <tr>
+                    <th>Số thứ tự</th>
+                    <th>Thiết bị</th>
+                    <th>Bật/Tắt</th>
+                    <th>Trạng thái</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Quạt</td>
+                    <td>
+                        <button onclick="controlFan('on')">Bật</button>
+                        <button onclick="controlFan('off')">Tắt</button>
+                    </td>
+                    <td id="fan_status" class="off">Wait</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>TV</td>
+                    <td>
+                        <button onclick="controlTV('on')">Bật</button>
+                        <button onclick="controlTV('off')">Tắt</button>
+                    </td>
+                    <td id="tv_status" class="off">Wait</td>
+                </tr>
+            </table>
+        </div>
+        <div id="sensor" class="page">
+            <h3><span style="color: white;">Tình trạng ngôi nhà</span></h3>
+            <!-- Nội dung tình trạng ngôi nhà -->
+            <div class="chart-wrapper">
+                <div class="chart-container">
+                    <canvas id="chart"></canvas>
+                </div>
+                <div class="chart-container1">
+                    <canvas id="chart1"></canvas>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <div style="overflow-y: auto; max-height: 200px; margin-right: 15px; width: 700px;">
+                    <p class="highlight" style="font-size: 18px; padding-bottom: 10px;">Bảng thông số cảm biến NHÀ XE</p>
+                    <table style="font-size: 20px;">
+                        <tr>
+                            <th style="padding: 10px;">Thời gian</th>
+                            <th style="padding: 10px;">Thông tin</th>
+                        </tr>
+                        <tbody id="sensor_data"></tbody>
+                    </table>
+                </div>
+                <div style="overflow-y: auto; max-height: 200px; margin-left: 15px; width: 700px;">
+                    <p class="highlight" style="font-size: 18px; padding-bottom: 10px;">Bảng thông số cảm biến CỬA</p>
+                    <table style="font-size: 20px;">
+                        <tr>
+                            <th style="padding: 10px;">Thời gian</th>
+                            <th style="padding: 10px;">Thông tin</th>
+                        </tr>
+                        <tbody id="sr505_data"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            
+            <script>
+                // Lấy tham chiếu đến phần tử tbody
+                const sensorDataContainer = document.getElementById('sensor_data');
+            
+                // Mảng lưu trữ dữ liệu cảm biến
+                const sensorData = [];
+            
+                // Khởi tạo biểu đồ
+                const ctx = document.getElementById('chart').getContext('2d');
+                const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Giá trị cảm biến hồng ngoại',
+                        data: [],
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Màu nền trắng
+                        borderColor: 'rgba(255, 0, 0, 1)', // Màu đỏ
+                        borderWidth: 5,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                color: 'white' // Màu cột x trắng
+                            },
+                            ticks: {
+                                color: 'darkgreen', // Màu thước đo y xanh đậm
+                                font: {
+                                    size: 20, // Kích thước chữ to hơn (14px)
+                                    weight: 'bold' // Đậm
+                                }
+                            }
+                        },
+        
+                        y: {
+                            display: true,
+                            suggestedMin: 0,
+                            suggestedMax: 1,
+                            stepSize: 1,
+                            grid: {
+                                color: 'blue' // Màu cột y trắng
+                            },
+                            ticks: {
+                                color: 'darkgreen', // Màu thước đo y xanh đậm
+                                font: {
+                                    size: 20, // Kích thước chữ to hơn (14px)
+                                    weight: 'bold' // Đậm
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'Black' // Màu chữ trắng
+                            }
+                        }
+                    }
+                }
+            });
+        
+        
+                // Lưu trữ trạng thái hiện tại của cảm biến hồng ngoại
+                let currentStatus = '';
+            
+                // Lắng nghe sự kiện SSE và cập nhật dữ liệu cảm biến hồng ngoại
+                const eventSource = new EventSource('/sensor_data');
+                eventSource.addEventListener('message', function(event) {
+                    const data = JSON.parse(event.data);
+                    const label = new Date(parseFloat(data.label) * 1000).toLocaleTimeString();
+                    const value = data.value === 1 ? 'Không có xe' : 'có xe';
+            
+                    // Kiểm tra nếu trạng thái hiện tại của cảm biến khác giá trị mới nhận được
+                    if (currentStatus !== value) {
+                        // Cập nhật trạng thái hiện tại
+                        currentStatus = value;
+            
+                        // Thêm dữ liệu mới vào mảng sensorData
+                        sensorData.push({ label: label, value: value });
+            
+                        // Cập nhật bảng dữ liệu cảm biến
+                        sensorDataContainer.innerHTML = '';
+                        for (let i = 0; i < sensorData.length; i++) {
+                            const entry = sensorData[i];
+                            sensorDataContainer.innerHTML += `<tr><td>${entry.label}</td><td>${entry.value}</td></tr>`;
+                        }
+            
+                        // Cập nhật biểu đồ
+                        chart.data.labels = sensorData.map(entry => entry.label);
+                        chart.data.datasets[0].data = sensorData.map(entry => entry.value === 'có xe' ? 1 : 0);
+                        chart.update();
+                    }
+                });
+            </script>
+            
+           
+            
+            
+            <script>
+                // Lấy tham chiếu đến phần tử tbody của SR505
+                const sr505DataContainer = document.getElementById('sr505_data');
+            
+                // Mảng lưu trữ dữ liệu của SR505
+                const sr505Data = [];
+            
+                // Khởi tạo biểu đồ SR505
+                const ctx1 = document.getElementById('chart1').getContext('2d');
+                const chart1 = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Giá trị cảm biến hồng ngoại',
+                        data: [],
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Màu nền trắng
+                        borderColor: 'rgba(255, 255, 0, 1)', // Màu vàng
+                        borderWidth: 5,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                color: 'white' // Màu cột x trắng
+                            },
+                            ticks: {
+                                color: 'darkgreen', // Màu thước đo y xanh đậm
+                                font: {
+                                    size: 20, // Kích thước chữ to hơn (14px)
+                                    weight: 'bold' // Đậm
+                                }
+                            }
+                        },
+        
+                        y: {
+                            display: true,
+                            suggestedMin: 0,
+                            suggestedMax: 1,
+                            stepSize: 1,
+                            grid: {
+                                color: 'blue' // Màu cột y trắng
+                            },
+                            ticks: {
+                                color: 'darkgreen', // Màu thước đo y xanh đậm
+                                font: {
+                                    size: 20, // Kích thước chữ to hơn (14px)
+                                    weight: 'bold' // Đậm
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'Black' // Màu chữ trắng
+                            }
+                        }
+                    }
+                }
+            });
+            
+                // Lưu trữ trạng thái hiện tại của cảm biến SR505
+                let currentStatusSR505 = '';
+            
+                // Lắng nghe sự kiện SSE và cập nhật dữ liệu cảm biến SR505
+                const sr505EventSource = new EventSource('/sr505_data');
+                sr505EventSource.addEventListener('message', function(event) {
+                    const data = JSON.parse(event.data);
+                    const label = new Date(parseFloat(data.label) * 1000).toLocaleTimeString();
+                    const value = data.value === 1 ? 'Không có người' : 'Có người trước cửa';
+            
+                    // Kiểm tra nếu trạng thái hiện tại của SR505 khác giá trị mới nhận được
+                    if (currentStatusSR505 !== value) {
+                        // Cập nhật trạng thái hiện tại
+                        currentStatusSR505 = value;
+            
+                        // Thêm dữ liệu mới vào mảng sr505Data
+                        sr505Data.push({ label: label, value: value });
+            
+                        // Cập nhật bảng dữ liệu của SR505
+                        sr505DataContainer.innerHTML = '';
+                        for (let i = 0; i < sr505Data.length; i++) {
+                            const entry = sr505Data[i];
+                            sr505DataContainer.innerHTML += `<tr><td>${entry.label}</td><td>${entry.value}</td></tr>`;
+                        }
+            
+                        // Cập nhật biểu đồ SR505
+                        chart1.data.labels = sr505Data.map(entry => entry.label);
+                        chart1.data.datasets[0].data = sr505Data.map(entry => entry.value === 'Có người trước cửa' ? 1 : 0);
+                        chart1.update();
+                    }
+                });
+            </script>
+        
+            <!-- Bảng thông số cảm biến DHT11 -->
+            <div class="chart-wrapper1">
+                <div class="chart-container2">
+                    <canvas id="chart2"></canvas>
+                </div>
+            </div>
+        
+            <div style="overflow-y: auto; max-height: 200px; margin-left: auto; margin-right: auto; width: 700px;">
+                <p class="highlight" style="font-size: 18px; padding-bottom: 10px;">Bảng thông số cảm biến NHIỆT ĐỘ</p>
+                <table style="font-size: 20px;">
+                    <tr>
+                        <th style="padding: 10px;">Thời gian</th>
+                        <th style="padding: 10px;">Độ ẩm (g/m³)</th>
+                        <th style="padding: 10px;">Nhiệt độ (°C)</th>
+                    </tr>
+                    <tbody id="dht11_data"></tbody>
+                </table>
+            </div>
+        
+            <script>
+                // Lấy tham chiếu đến phần tử tbody
+                const sensorDataContainerDHT = document.getElementById('dht11_data');
+        
+                // Mảng lưu trữ dữ liệu cảm biến
+                const dht11data = [];
+        
+                // Khởi tạo biểu đồ
+                const ctx2 = document.getElementById('chart2').getContext('2d');
+                const chart2 = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Nhiệt độ',
+                            data: [],
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            borderWidth: 5,
+                            fill: true,
+                        }, {
+                            label: 'Độ ẩm',
+                            data: [],
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            borderColor: 'rgba(0, 0, 255, 1)',
+                            borderWidth: 5,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: {
+                                    color: 'blue'
+                                },
+                                ticks: {
+                                    color: 'darkgreen',
+                                    font: {
+                                        size: 20,
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            y: {
+                                display: true,
+                                suggestedMin: 0,
+                                suggestedMax: 100,
+                                stepSize: 10,
+                                grid: {
+                                    color: 'blue'
+                                },
+                                ticks: {
+                                    color: 'darkgreen',
+                                    font: {
+                                        size: 20,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'black'
+                                }
+                            }
+                        }
+                    }
+                });
+        
+                // Lưu trữ trạng thái hiện tại của cảm biến DHT11
+                let currentStatusDHT11 = '';
+        
+                // Lắng nghe sự kiện SSE và cập nhật dữ liệu cảm biến DHT11
+                const dht11EventSource = new EventSource('/dht11_data');
+                dht11EventSource.addEventListener('message', function(event) {
+                    const data = JSON.parse(event.data);
+                    const label = new Date(parseFloat(data.label) * 1000).toLocaleTimeString();
+                    const humidity = data.humidity;
+                    const temperature = data.temperature;
+        
+                    // Kiểm tra nếu trạng thái hiện tại của DHT11 khác giá trị mới nhận được
+                    if (currentStatusDHT11 !== label) {
+                        // Cập nhật trạng thái hiện tại
+                        currentStatusDHT11 = label;
+        
+                        // Thêm dữ liệu mới vào mảng sensorData
+                        dht11data.push({ label: label, humidity: humidity, temperature: temperature });
+        
+                        // Cập nhật bảng dữ liệu của sensorData
+                        sensorDataContainerDHT.innerHTML = '';
+                        for (let i = 0; i < dht11data.length; i++) {
+                            const entry = dht11data[i];
+                            sensorDataContainerDHT.innerHTML += `<tr><td>${entry.label}</td><td>${entry.humidity}</td><td>${entry.temperature}</td></tr>`;
+                        }
+        
+                        // Cập nhật biểu đồ sensorData
+                        chart2.data.labels = dht11data.map(entry => entry.label);
+                        chart2.data.datasets[1].data = dht11data.map(entry => entry.humidity);
+                        chart2.data.datasets[0].data = dht11data.map(entry => entry.temperature);
+                        chart2.update();
+                    }
+                });
+            </script>
+    </div>   
+    
+</body>
+</html>
